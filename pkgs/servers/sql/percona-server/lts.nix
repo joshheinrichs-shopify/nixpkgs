@@ -1,8 +1,9 @@
 { lib, stdenv, fetchurl, bison, cmake, pkg-config
 , boost, icu, libedit, libevent, lz4, ncurses, openssl, perl, protobuf, re2, readline, zlib, zstd, libfido2
 , numactl, cctools, CoreServices, developer_cmds, libtirpc, rpcsvc-proto, curl, DarwinTools, nixosTests
+, coreutils, gnused, gnugrep, procps, hostname
 # Percona-specific deps
-, coreutils, cyrus_sasl, gnumake, openldap
+, cyrus_sasl, gnumake, openldap
 }:
 
 stdenv.mkDerivation (finalAttrs: {
@@ -30,6 +31,40 @@ stdenv.mkDerivation (finalAttrs: {
     substituteInPlace storage/rocksdb/get_rocksdb_files.sh --replace mktemp ${coreutils}/bin/mktemp
     substituteInPlace storage/rocksdb/get_rocksdb_files.sh --replace "rm $MKFILE" "${coreutils}/bin/rm $MKFILE"
     substituteInPlace storage/rocksdb/get_rocksdb_files.sh --replace "make --" "${gnumake}/bin/make --"
+
+    substituteInPlace scripts/CMakeLists.txt \
+      --replace "ps " "${procps}/bin/ps " \
+      --replace "grep " "${gnugrep}/bin/grep " \
+      --replace "kill " "${coreutils}/bin/kill "
+
+    substituteInPlace scripts/mysqld_safe.sh \
+      --replace "| sed" "| ${gnused}/bin/sed" \
+      --replace "|sed" "|${gnused}/bin/sed" \
+      --replace grep ${gnugrep}/bin/grep \
+      --replace expr ${coreutils}/bin/expr \
+      --replace "cat " "${coreutils}/bin/cat " \
+      --replace "rm -f" "${coreutils}/bin/rm -f" \
+      --replace "date -" "${coreutils}/bin/date -" \
+      --replace "date +" "${coreutils}/bin/date +" \
+      --replace dirname ${coreutils}/bin/dirname \
+      --replace basename ${coreutils}/bin/basename \
+      --replace readlink ${coreutils}/bin/readlink \
+      --replace chown ${coreutils}/bin/chown \
+      --replace "env " "${coreutils}/bin/env " \
+      --replace "|cut" "|${coreutils}/bin/cut" \
+      --replace "|wc" "|${coreutils}/bin/wc" \
+      --replace hostname ${hostname}/bin/hostname
+    substituteInPlace scripts/mysql_config.sh \
+      --replace "| sed" "| ${gnused}/bin/sed" \
+      --replace "|sed" "|${gnused}/bin/sed" \
+      --replace "cat " "${coreutils}/bin/cat "
+    substituteInPlace scripts/mysqld_multi.pl.in --replace grep ${gnugrep}/bin/grep
+    substituteInPlace scripts/ps_mysqld_helper.sh --replace grep ${gnugrep}/bin/grep
+    substituteInPlace scripts/ps-admin.sh \
+      --replace grep ${gnugrep}/bin/grep \
+      --replace "rm -f" "${coreutils}/bin/rm -f" \
+      --replace dirname ${coreutils}/bin/dirname \
+      --replace basename ${coreutils}/bin/basename
   '';
 
   buildInputs = [
