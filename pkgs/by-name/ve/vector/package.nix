@@ -1,6 +1,7 @@
 {
   stdenv,
   lib,
+  buildPackages,
   fetchFromGitHub,
   rustPlatform,
   pkg-config,
@@ -27,7 +28,7 @@ let
   pname = "vector";
   version = "0.45.0";
 in
-rustPlatform.buildRustPackage {
+rustPlatform.buildRustPackage rec {
   inherit pname version;
 
   src = fetchFromGitHub {
@@ -38,7 +39,7 @@ rustPlatform.buildRustPackage {
   };
 
   useFetchCargoVendor = true;
-  cargoHash = "sha256-qEo8GYGwUWtfMT6m9TaQzneV+tglUnapjFtuxL5yudw=";
+  cargoHash = "sha256-p7J7ghIqJjRw+v2vM9WVj+pHCocbZdUO4tq4zIFmJ4Y=";
 
   nativeBuildInputs =
     [
@@ -47,6 +48,8 @@ rustPlatform.buildRustPackage {
       perl
       git
       rustPlatform.bindgenHook
+      buildPackages.stdenv.cc
+
     ]
     # Provides the mig command used by the build scripts
     ++ lib.optional stdenv.hostPlatform.isDarwin darwin.bootstrap_cmds;
@@ -57,6 +60,7 @@ rustPlatform.buildRustPackage {
       protobuf
       rdkafka
       zstd
+      stdenv.cc
     ]
     ++ lib.optionals stdenv.hostPlatform.isLinux [ rust-jemalloc-sys-unprefixed ]
     ++ lib.optionals stdenv.hostPlatform.isDarwin [
@@ -65,6 +69,10 @@ rustPlatform.buildRustPackage {
       coreutils
       zlib
     ];
+  
+  cargoPatches = [
+    ./bump-krb5-src.patch
+  ];
 
   # Rust 1.80.0 introduced the unexepcted_cfgs lint, which requires crates to allowlist custom cfg options that they inspect.
   # Upstream is working on fixing this in https://github.com/vectordotdev/vector/pull/20949, but silencing the lint lets us build again until then.
@@ -75,9 +83,14 @@ rustPlatform.buildRustPackage {
   RUST_MIN_STACK = 33554432;
 
   # needed for internal protobuf c wrapper library
-  PROTOC = "${protobuf}/bin/protoc";
-  PROTOC_INCLUDE = "${protobuf}/include";
+  PROTOC = "${buildPackages.protobuf}/bin/protoc";
+  PROTOC_INCLUDE = "${buildPackages.protobuf}/include";
   RUSTONIG_SYSTEM_LIBONIG = true;
+
+  krb5_cv_attr_constructor_destructor = "yes";
+  ac_cv_func_regcomp = "yes";
+  ac_cv_printf_positional = "yes";
+  ac_cv_gssapi_supports_spnego = "yes";
 
   TZDIR = "${tzdata}/share/zoneinfo";
 
