@@ -7,6 +7,8 @@
   autoPatchelfHook,
   python3,
   libxcrypt-legacy,
+  makeWrapper,
+  jre_headless,
 }:
 
 let
@@ -168,10 +170,15 @@ let
 
         # Write the snapshot file to the `.install` folder
         cp $snapshotPath $out/google-cloud-sdk/.install/${pname}.snapshot.json
+      ''
+      + lib.optionalString (pname == "pubsub-emulator") ''
+        wrapProgram $out/google-cloud-sdk/platform/pubsub-emulator/bin/cloud-pubsub-emulator \
+          --set JAVA_HOME ${jre_headless}
       '';
       nativeBuildInputs = [
         python3
         stdenv.cc.cc
+        makeWrapper
       ]
       ++ lib.optionals stdenv.hostPlatform.isLinux [
         autoPatchelfHook
