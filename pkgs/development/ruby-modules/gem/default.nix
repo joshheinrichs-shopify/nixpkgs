@@ -79,14 +79,24 @@ lib.makeOverridable (
             inherit (attrs.source) sha256;
           }
         else if type == "git" then
-          fetchgit {
-            inherit (attrs.source)
-              url
-              rev
-              sha256
-              fetchSubmodules
-              ;
-          }
+          if attrs.source ? private then
+            builtins.fetchGit {
+              inherit (attrs.source)
+                url
+                rev
+                # sha256
+                ;
+              submodules = attrs.source.fetchSubmodules;
+            }
+          else
+            fetchgit {
+              inherit (attrs.source)
+                url
+                rev
+                sha256
+                fetchSubmodules
+                ;
+            }
         else if type == "url" then
           fetchurl attrs.source
         else
