@@ -235,6 +235,10 @@ lib.makeOverridable (
               '${attrs.source.url}' \
               '.' \
               '${attrs.source.rev}'
+            # The buildPhase creates .git so that gemspecs using `git ls-files`
+            # work, but it's not needed at runtime and causes collisions when
+            # multiple gems are sourced from the same repository.
+            rm -rf $GEM_HOME/bundler/gems/*/.git
             ${lib.optionalString (!keepGemCache) "rm -fvr $GEM_HOME/cache"}
           ''}
 
