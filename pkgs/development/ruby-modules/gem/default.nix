@@ -235,6 +235,7 @@ lib.makeOverridable (
               '${attrs.source.url}' \
               '.' \
               '${attrs.source.rev}'
+            ${lib.optionalString (!keepGemCache) "rm -fvr $GEM_HOME/cache"}
           ''}
 
           ${lib.optionalString (type == "gem") ''
